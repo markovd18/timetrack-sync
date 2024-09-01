@@ -46,6 +46,19 @@ type Categories_Response struct {
 	Data        []Category `json:"data"`
 }
 
+// TimeEntry represents a time entry in Toggl Track.
+type TimeEntry struct {
+	ID          int64      `json:"id"`
+	ProjectID   *int64     `json:"project_id,omitempty"`
+	TaskID      int64      `json:"task_id"`
+	Start       time.Time  `json:"start"`
+	Stop        *time.Time `json:"stop,omitempty"`
+	Duration    int64      `json:"duration"`
+	Description string     `json:"description"`
+	//Tags        []string   `json:"tags"`
+	//TagIDs      []int64    `json:"tag_ids"`
+}
+
 func get_request(url string, logger *zerolog.Logger) []byte {
 	res, err := http.Get(url)
 	if err != nil {
@@ -189,7 +202,7 @@ func main() {
 
 	//logger.Info().Str("cookie_header", res.Header.Get("Set-Cookie")).Str("body", fmt.Sprintf("%s", read_body(res.Body, &logger))).Msg("Parsuju response")
 
-	time_entries_url := fmt.Sprintf("%s/me/time_entries?start_date=%s&end_date=%s", TOGGL_API_URL, "2024-08-01", "2024-08-04")
+	time_entries_url := fmt.Sprintf("%s/me/time_entries?start_date=%s&end_date=%s", TOGGL_API_URL, "2024-08-01", "2024-08-02")
 	req, err := http.NewRequest(http.MethodGet, time_entries_url, nil)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Nepovedlo se vytvorit request")
@@ -205,5 +218,39 @@ func main() {
 		logger.Fatal().Str("reason", fmt.Sprintf("%s", read_body(res.Body, &logger))).Msg("Autentizace selhala")
 	}
 
-	logger.Info().Str("body", fmt.Sprintf("%s", read_body(res.Body, &logger))).Msg("Parsuju response")
+	response_body := read_body(res.Body, &logger)
+	logger.Info().Str("response_body", fmt.Sprintf("%s", response_body)).Msg("Prislo mi response body")
+
+	var time_entries []TimeEntry
+	/*payload := `[
+				    {
+				        "id": 3551345514,
+				        "workspace_id": 8401653,
+				        "project_id": null,
+				        "task_id": null,
+				        "billable": false,
+				        "start": "2024-08-02T13:00:00+00:00",
+				        "stop": "2024-08-02T15:45:00+00:00",
+				        "duration": 9900,
+				        "description": "Portal E2E, eon config, solax a victron jističe",
+				        "tags": [],
+				        "tag_ids": [],
+				        "duronly": true,
+				        "at": "2024-08-02T15:37:10+00:00",
+				        "server_deleted_at": null,
+				        "user_id": 10892934,
+				        "uid": 10892934,
+				        "wid": 8401653,
+				        "permissions": null
+				    },
+		{"id":3549232163,"workspace_id":8401653,"project_id":204295657,"task_id":null,"billable":false,"start":"2024-08-01T09:49:36+00:00","stop":"2024-08-01T13:16:44+00:00","duration":12428,"description":"Goodwe na portál","tags":[],"tag_ids":[],"duronly":true,"at":"2024-08-01T13:16:44+00:00","server_deleted_at":null,"user_id":10892934,"uid":10892934,"wid":8401653,"pid":204295657,"permissions":null},
+	{"id":3548965325,"workspace_id":8401653,"project_id":204295657,"task_id":null,"billable":false,"start":"2024-08-01T06:52:36+00:00","stop":"2024-08-01T09:19:36+00:00","duration":8820,"description":"Goodwe na portál","tags":[],"tag_ids":[],"duronly":true,"at":"2024-08-01T09:49:52+00:00","server_deleted_at":null,"user_id":10892934,"uid":10892934,"wid":8401653,"pid":204295657,"permissions":null}
+				]
+				`*/
+	err = json.Unmarshal(response_body, &time_entries)
+	//err = json.Unmarshal([]byte(payload), &time_entries)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Error pri unmarshalingu toggl responsu")
+	}
+
 }

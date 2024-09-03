@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	//"flag"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/markovd18/timetrack-sync/src/sloneek"
 	"github.com/rs/zerolog"
 )
 
@@ -48,13 +50,13 @@ type Categories_Response struct {
 
 // TimeEntry represents a time entry in Toggl Track.
 type TimeEntry struct {
-	ID          int64      `json:"id"`
-	ProjectID   *int64     `json:"project_id,omitempty"`
-	TaskID      int64      `json:"task_id"`
-	Start       time.Time  `json:"start"`
-	Stop        *time.Time `json:"stop,omitempty"`
-	Duration    int64      `json:"duration"`
-	Description string     `json:"description"`
+	ID          int64     `json:"id"`
+	ProjectID   *int64    `json:"project_id,omitempty"`
+	TaskID      int64     `json:"task_id"`
+	Start       time.Time `json:"start"`
+	Stop        time.Time `json:"stop,omitempty"`
+	Duration    int64     `json:"duration"`
+	Description string    `json:"description"`
 	//Tags        []string   `json:"tags"`
 	//TagIDs      []int64    `json:"tag_ids"`
 }
@@ -165,15 +167,16 @@ func main() {
 		logger.Fatal().Err(err).Msg("Error while loading environment variables")
 	}
 
-	//bearer_token := flag.String("bearer", "", "Bearer token obtained after login to Sloneek app")
+	bearer_token := flag.String("bearer", "", "Bearer token obtained after login to Sloneek app")
 	//toggl_email := flag.String("toggl-email", "", "Toggl Track login email")
 	//toggl_password := flag.String("toggl-password", "", "Toggl Track password")
 
-	//flag.Parse()
+	flag.Parse()
 
-	//if *bearer_token == "" {
-	//	logger.Fatal().Msg("Nezadal jsi JWT")
-	//}
+	if *bearer_token == "" {
+		logger.Fatal().Msg("Nezadal jsi JWT")
+		return
+	}
 
 	//if *toggl_email == "" || *toggl_password == "" {
 	//	// TODO fatal nezadal jsi kredence
@@ -201,6 +204,9 @@ func main() {
 	//}
 
 	//logger.Info().Str("cookie_header", res.Header.Get("Set-Cookie")).Str("body", fmt.Sprintf("%s", read_body(res.Body, &logger))).Msg("Parsuju response")
+	sloneekClient := sloneek.CreateSloneekClient(SLONEEK_API, *bearer_token, &logger)
+	sloneekClient.GetCategories()
+	sloneekClient.GetActivities()
 
 	time_entries_url := fmt.Sprintf("%s/me/time_entries?start_date=%s&end_date=%s", TOGGL_API_URL, "2024-08-01", "2024-08-02")
 	req, err := http.NewRequest(http.MethodGet, time_entries_url, nil)
@@ -251,6 +257,11 @@ func main() {
 	//err = json.Unmarshal([]byte(payload), &time_entries)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Error pri unmarshalingu toggl responsu")
+	}
+
+	for _, time_entry := range time_entries {
+		time_entry.Start = time_entry.Start.Round(15 * time.Minute)
+		time_entry.Stop = time_entry.Stop.Round(15 * time.Minute)
 	}
 
 }

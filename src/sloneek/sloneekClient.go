@@ -18,7 +18,7 @@ type SloneekClient struct {
 }
 
 type Category struct {
-	Uuid string `json:"uuid"`
+	Id   string `json:"uuid"`
 	Name string `jons:"name"`
 }
 
@@ -28,7 +28,8 @@ type CategoriesResponse struct {
 	Data        []Category `json:"data"`
 }
 
-func (client *SloneekClient) GetCategories() *map[string]string {
+// zajimaj me hlavne "Meeting", "Hiring", "Vývoj"
+func (client *SloneekClient) GetCategories() []Category {
 	categoriesUrl := fmt.Sprintf("%s/v2/module-planning/scheduled-events/options/categories", client.apiUrl)
 	req, err := http.NewRequest(http.MethodGet, categoriesUrl, nil)
 	if err != nil {
@@ -58,18 +59,12 @@ func (client *SloneekClient) GetCategories() *map[string]string {
 	}
 
 	fmt.Printf("payload.Data: %v\n", categoriesPayload.Data)
-	categoriesMap := make(map[string]string)
-	for _, item := range categoriesPayload.Data {
-		categoriesMap[item.Name] = item.Uuid
-	}
-	fmt.Printf("categories map: %v\n", categoriesMap)
-	return &categoriesMap
+	return categoriesPayload.Data
 }
 
 type PlanningEvent struct {
 	Uuid string `json:"uuid"`
 	Name string `json:"name"`
-	// pak este neco
 }
 
 type UserPlanningEvent struct {
@@ -83,7 +78,12 @@ type OptionsResponse struct {
 	Data        []UserPlanningEvent `json:"data"`
 }
 
-func (client *SloneekClient) GetActivities() *map[string]string {
+type Activity struct {
+	Id   string
+	Name string
+}
+
+func (client *SloneekClient) GetActivities() []Activity {
 	endpointUrl := fmt.Sprintf("%s/v2/module-planning/scheduled-events/options/user-planning-events", client.apiUrl)
 	req, err := http.NewRequest(http.MethodGet, endpointUrl, nil)
 	if err != nil {
@@ -113,13 +113,12 @@ func (client *SloneekClient) GetActivities() *map[string]string {
 
 	fmt.Printf("payload.Data: %v\n", payload.Data)
 
-	activitiesMap := make(map[string]string)
-	for _, item := range payload.Data {
-		activitiesMap[item.Planning_Event.Name] = item.Planning_Event.Uuid
+	activities := make([]Activity, len(payload.Data))
+	for i, item := range payload.Data {
+		activities[i] = Activity{Id: item.Planning_Event.Uuid, Name: item.Planning_Event.Name}
 	}
 
-	fmt.Printf("activities_map: %v\n", activitiesMap)
-	return &activitiesMap
+	return activities
 
 }
 
@@ -130,4 +129,12 @@ func CreateSloneekClient(apiUrl string, bearerToken string, logger *zerolog.Logg
 
 func (client *SloneekClient) authenticateRequest(req *http.Request) {
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", client.bearerToken))
+}
+
+type TimeEntry struct {
+	ActivityId string
+	CategoryId *string
+	note       string
+	Since      time.Time
+	Until      time.Time
 }

@@ -231,3 +231,57 @@ func TestMapToggleToSloneekWorksAsExpected(t *testing.T) {
 		t.Errorf("Unexpected end time found. Expected %s, got %s", entryStart, (*result).Since)
 	}
 }
+
+func TestMapToggleToSloneekWorksAsExpectedSecond(t *testing.T) {
+	expectedActivityId := "2"
+	activities := []sloneek.Activity{
+		{Id: expectedActivityId, Name: "Vývoj"},
+		{Id: "2", Name: "Hiring"},
+		{Id: "3", Name: "Meeting"},
+	}
+
+	categories := []sloneek.Category{
+		{Id: "1", Name: "Proteus"},
+		{Id: "2", Name: "Portál"},
+		{Id: "3", Name: "Akviziční formulář"},
+		{Id: "4", Name: "Flexi"},
+	}
+
+	projectId := int32(4)
+	projects := []toggltrack.Project{
+		{Name: "Proteus", Id: projectId},
+		{Name: "Akvizice", Id: 2},
+		{Name: "Portál", Id: 3},
+		{Name: "Hiring", Id: projectId},
+		{Name: "Flexi", Id: 5},
+		{Name: "Copilot", Id: 6},
+	}
+
+	entryStart := dateTimeFromString("2024-01-01 10:00:00", t)
+	entryStop := dateTimeFromString("2024-01-01 10:15:00", t)
+	togglEntry := toggltrack.TimeEntry{
+		ID:        1,
+		Start:     entryStart,
+		Stop:      entryStop,
+		ProjectID: &projectId,
+		Duration:  15 * 60,
+	}
+
+	result, err := MapTogglEntryToSloneekEntry(&togglEntry, projects, activities, categories, &zerolog.Logger{})
+	if err != nil {
+		t.Errorf("Mapping function returned unexpected error: %v", err)
+	}
+
+	if result.ActivityId != expectedActivityId {
+		t.Errorf("Unexpected activity found. Expected %s, got %s", expectedActivityId, result.ActivityId)
+	}
+	if result.CategoryId != nil {
+		t.Errorf("Unexpected category found. Expected %v, got %s", nil, *result.CategoryId)
+	}
+	if !(*result).Since.Equal(entryStart) {
+		t.Errorf("Unexpected start time found. Expected %s, got %s", entryStart, (*result).Since)
+	}
+	if !(*result).Until.Equal(entryStop) {
+		t.Errorf("Unexpected end time found. Expected %s, got %s", entryStart, (*result).Since)
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"timetrack-sync/src/sloneek"
 	toggltrack "timetrack-sync/src/togglTrack"
 	"timetrack-sync/src/utils"
 
@@ -160,8 +161,9 @@ func read_body(body_stream io.ReadCloser, logger *zerolog.Logger) []byte {
 }
 
 func RoundTimeEntries(entries []toggltrack.TimeEntry) []toggltrack.TimeEntry {
-	for _, timeEntry := range entries {
-		utils.RoundTimeEntry(&timeEntry)
+	entriesLen := len(entries)
+	for i := 0; i < entriesLen; i++ {
+		utils.RoundTimeEntry(&entries[i])
 	}
 
 	return entries
@@ -198,9 +200,11 @@ func main() {
 		return
 	}
 
-	//sloneekClient := sloneek.CreateSloneekClient(SLONEEK_API, *bearer_token, &logger)
-	//sloneekCategories := sloneekClient.GetCategories()
-	//sloneedActivities := sloneekClient.GetActivities()
+	sloneekClient := sloneek.CreateSloneekClient(SLONEEK_API, *bearer_token, &logger)
+	sloneekCategories := sloneekClient.GetCategories()
+	sloneekActivities := sloneekClient.GetActivities()
+	logger.Info().Any("sloneek_activities", sloneekActivities).Msg("Got sloneek activities")
+	logger.Info().Any("sloneek_categories", sloneekCategories).Msg("Got sloneek categories")
 
 	togglApiKey := os.Getenv("TOGGL_API_KEY")
 	togglTrackClient := toggltrack.CreateTogglTrackClient(TOGGL_API_URL, togglApiKey, &logger)
@@ -217,8 +221,16 @@ func main() {
 	togglTimeEntries := togglTrackClient.GetTimeEntries(since, until)
 	fmt.Printf("togglTimeEntries: %v\n", togglTimeEntries)
 
-	//togglProjects := togglTrackClient.GetProjects()
+	roundedEntries := RoundTimeEntries(togglTimeEntries)
+	togglProjects := togglTrackClient.GetProjects()
 
-	RoundTimeEntries(togglTimeEntries)
+	for _, entry := range roundedEntries {
+		sloneekEntry, err := utils.MapTogglEntryToSloneekEntry(&entry, togglProjects, sloneekActivities, sloneekCategories, &logger)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("Error while mapping toggle entry to sloneek entry")
+		}
+
+		logger.Info().Any("sloneek_entry", sloneekEntry).Any("toggl_entry", entry).Msg("Entry premapovano")
+	}
 
 }

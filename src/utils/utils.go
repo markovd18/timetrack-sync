@@ -22,7 +22,36 @@ func RoundTimeEntry(entry *toggltrack.TimeEntry) (*toggltrack.TimeEntry, error) 
 	return entry, nil
 }
 
+func ParseDateString(value string, logger *zerolog.Logger, errorMessage *string) time.Time {
+	message := "Error while parsing date"
+	if errorMessage != nil {
+		message = *errorMessage
+	}
+
+	timeValue, err := time.Parse(time.DateOnly, value)
+	if err != nil {
+		logger.Fatal().Err(err).Msg(message)
+	}
+
+	return timeValue
+}
+
+func ParseDateTimeString(value string, logger *zerolog.Logger, errorMessage *string) time.Time {
+	message := "Error while parsing date time"
+	if errorMessage != nil {
+		message = *errorMessage
+	}
+
+	timeValue, err := time.Parse(time.DateTime, value)
+	if err != nil {
+		logger.Fatal().Err(err).Msg(message)
+	}
+
+	return timeValue
+}
+
 func MapTogglProjectToSloneekActivityAndCategory(project string) (string, string) {
+	// TODO this as an external config?
 	switch project {
 	case "Proteus":
 		return "Vývoj", "Proteus"
@@ -50,6 +79,7 @@ func MapTogglEntryToSloneekEntry(
 	sloneekCategories []sloneek.Category,
 	logger *zerolog.Logger,
 ) (*sloneek.TimeEntry, error) {
+	logger.Debug().Any("entry", entry).Msg("Mapping toggl entry to sloneek entry")
 	projectIndex := slices.IndexFunc(togglProjects, func(project toggltrack.Project) bool { return project.Id == *entry.ProjectID })
 	if projectIndex == -1 {
 		logger.Error().Any("entry", *entry).Msg("Project for entry not found")
@@ -96,24 +126,4 @@ func MapTogglEntryToSloneekEntry(
 	}
 
 	return sloneekEntry, nil
-
-	//{
-	//"isRepeat":false,
-	//"user_planning_event_uuid":"53016fa7-44fd-4726-949e-b8b66b72c38c",
-	//"planning_categories":["6adf0954-5cf0-4de7-b161-30a4f4d4caec"],
-	//"started_at":"2024-08-05T09:00:00+02:00",
-	//"ended_at":"2024-08-05T09:30:00+02:00",
-	//"start_time":"09:00:00+02:00",
-	//"end_time":"09:30:00+02:00",
-	//"days":[],
-	//"duration_time":"2024-08-04T22:30:00.000Z",
-	//"duration":30,
-	//"timezone":"2024-08-31T17:20:56+02:00",
-	//"note":"",
-	//"is_automatically_approve":false,
-	//"message":"",
-	//"mentions":[],
-	//"client":"",
-	//"client_project":""
-	//}
 }

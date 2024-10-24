@@ -3,22 +3,12 @@ package utils
 import (
 	"fmt"
 	"testing"
-	"time"
 	"timetrack-sync/src/sloneek"
+	testutils "timetrack-sync/src/testUtils"
 	toggltrack "timetrack-sync/src/togglTrack"
 
 	"github.com/rs/zerolog"
 )
-
-func dateTimeFromString(value string, t *testing.T) time.Time {
-	t.Helper()
-	result, err := time.Parse(time.DateTime, value)
-	if err != nil {
-		t.Errorf("PArsing failed: %v", err)
-	}
-
-	return result
-}
 
 func TestRoundTimeEntryWorksAsExpected(t *testing.T) {
 
@@ -35,11 +25,11 @@ func TestRoundTimeEntryWorksAsExpected(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(fmt.Sprintf("Start %s, End %s", testCase.Start, testCase.End), func(t *testing.T) {
-			start := dateTimeFromString(testCase.Start, t)
-			end := dateTimeFromString(testCase.End, t)
+			start := testutils.DateTimeFromString(testCase.Start, t)
+			end := testutils.DateTimeFromString(testCase.End, t)
 
-			expectedStart := dateTimeFromString(testCase.ExpectedStart, t)
-			expectedEnd := dateTimeFromString(testCase.ExpectedEnd, t)
+			expectedStart := testutils.DateTimeFromString(testCase.ExpectedStart, t)
+			expectedEnd := testutils.DateTimeFromString(testCase.ExpectedEnd, t)
 
 			entry := toggltrack.TimeEntry{ID: 1, Start: start, Stop: end, TaskID: 10, Duration: 15, Description: "test"}
 			result, testErr := RoundTimeEntry(&entry)
@@ -87,8 +77,8 @@ func TestMapToggleToSloneekEntryFailsWhenProjectNotFound(t *testing.T) {
 	projectId := int32(10)
 	togglEntry := toggltrack.TimeEntry{
 		ID:        1,
-		Start:     dateTimeFromString("2024-01-01 10:00:00", t),
-		Stop:      dateTimeFromString("2024-01-01 10:15:00", t),
+		Start:     testutils.DateTimeFromString("2024-01-01 10:00:00", t),
+		Stop:      testutils.DateTimeFromString("2024-01-01 10:15:00", t),
 		ProjectID: &projectId,
 		Duration:  15 * 60,
 	}
@@ -126,8 +116,8 @@ func TestMapToggleToSloneekEntryFailsWhenActivityNotFound(t *testing.T) {
 	projectId := int32(1)
 	togglEntry := toggltrack.TimeEntry{
 		ID:        1,
-		Start:     dateTimeFromString("2024-01-01 10:00:00", t),
-		Stop:      dateTimeFromString("2024-01-01 10:15:00", t),
+		Start:     testutils.DateTimeFromString("2024-01-01 10:00:00", t),
+		Stop:      testutils.DateTimeFromString("2024-01-01 10:15:00", t),
 		ProjectID: &projectId,
 		Duration:  15 * 60,
 	}
@@ -165,8 +155,8 @@ func TestMapToggleToSloneekEntryFailsWHenCategoryNotFound(t *testing.T) {
 	projectId := int32(1)
 	togglEntry := toggltrack.TimeEntry{
 		ID:        1,
-		Start:     dateTimeFromString("2024-01-01 10:00:00", t),
-		Stop:      dateTimeFromString("2024-01-01 10:15:00", t),
+		Start:     testutils.DateTimeFromString("2024-01-01 10:00:00", t),
+		Stop:      testutils.DateTimeFromString("2024-01-01 10:15:00", t),
 		ProjectID: &projectId,
 		Duration:  15 * 60,
 	}
@@ -203,8 +193,8 @@ func TestMapToggleToSloneekWorksAsExpected(t *testing.T) {
 		{Name: "Copilot", Id: 6},
 	}
 
-	entryStart := dateTimeFromString("2024-01-01 10:00:00", t)
-	entryStop := dateTimeFromString("2024-01-01 10:15:00", t)
+	entryStart := testutils.DateTimeFromString("2024-01-01 10:00:00", t)
+	entryStop := testutils.DateTimeFromString("2024-01-01 10:15:00", t)
 	togglEntry := toggltrack.TimeEntry{
 		ID:        1,
 		Start:     entryStart,
@@ -235,8 +225,8 @@ func TestMapToggleToSloneekWorksAsExpected(t *testing.T) {
 func TestMapToggleToSloneekWorksAsExpectedSecond(t *testing.T) {
 	expectedActivityId := "2"
 	activities := []sloneek.Activity{
-		{Id: expectedActivityId, Name: "Vývoj"},
-		{Id: "2", Name: "Hiring"},
+		{Id: "1", Name: "Vývoj"},
+		{Id: expectedActivityId, Name: "Hiring"},
 		{Id: "3", Name: "Meeting"},
 	}
 
@@ -249,7 +239,7 @@ func TestMapToggleToSloneekWorksAsExpectedSecond(t *testing.T) {
 
 	projectId := int32(4)
 	projects := []toggltrack.Project{
-		{Name: "Proteus", Id: projectId},
+		{Name: "Proteus", Id: 1},
 		{Name: "Akvizice", Id: 2},
 		{Name: "Portál", Id: 3},
 		{Name: "Hiring", Id: projectId},
@@ -257,8 +247,8 @@ func TestMapToggleToSloneekWorksAsExpectedSecond(t *testing.T) {
 		{Name: "Copilot", Id: 6},
 	}
 
-	entryStart := dateTimeFromString("2024-01-01 10:00:00", t)
-	entryStop := dateTimeFromString("2024-01-01 10:15:00", t)
+	entryStart := testutils.DateTimeFromString("2024-01-01 10:00:00", t)
+	entryStop := testutils.DateTimeFromString("2024-01-01 10:15:00", t)
 	togglEntry := toggltrack.TimeEntry{
 		ID:        1,
 		Start:     entryStart,

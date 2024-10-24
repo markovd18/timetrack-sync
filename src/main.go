@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"slices"
 	"timetrack-sync/src/sloneek"
 	toggltrack "timetrack-sync/src/togglTrack"
 	"timetrack-sync/src/utils"
@@ -39,6 +40,7 @@ func main() {
 	}
 
 	bearerToken := flag.String("bearer", "", "Bearer token obtained after login to Sloneek app")
+	dryRun := flag.Bool("dry-run", false, "Whether or not to launch a dry run which does not persist any data.")
 
 	logger.Info().Msg("Parsing CLI flags")
 	flag.Parse()
@@ -56,7 +58,7 @@ func main() {
 
 	// TODO CLI flagy
 	errorMsg := "Error while parsing interval start."
-	since := utils.ParseDateString("2024-09-30", &logger, &errorMsg)
+	since := utils.ParseDateString("2024-09-01", &logger, &errorMsg)
 
 	errorMsg = "Error while parsing interval end."
 	until := utils.ParseDateString("2024-10-01", &logger, &errorMsg)
@@ -87,24 +89,51 @@ func main() {
 
 	logger.Debug().Any("result", sloneekEntries).Msg("Mam vysledek")
 
-	// test sloneek postu
-	//categoryId := "8969d1b2-57bb-4bb4-8174-8b39b8dd6dcb"
-	//sloneekClient.SaveTimeEntry(&sloneek.TimeEntry{
-	//	ActivityId: "d04f6cb7-1186-4d04-9d84-c23501fe4ae9",
-	//	CategoryId: &categoryId,
-	//	Since:      utils.ParseDateTimeString("2024-09-29 10:00:00", &logger, nil),
-	//	Until:      utils.ParseDateTimeString("2024-09-29 10:30:00", &logger, nil),
-	//})
-
-	logger.Info().Msg("Sending time entries to Sloneek")
-
-	for _, entry := range sloneekEntries {
-		err := sloneekClient.SaveTimeEntry(&entry)
-		if err != nil {
-			logger.Error().Err(err).Any("entry", entry).Msg("Failed to save Sloneek time entry")
-			break
+	if dryRun != nil && !*dryRun {
+		logger.Info().Msg("Sending time entries to Sloneek")
+		for _, entry := range sloneekEntries {
+			err := sloneekClient.SaveTimeEntry(&entry)
+			if err != nil {
+				logger.Error().Err(err).Any("entry", entry).Msg("Failed to save Sloneek time entry")
+				break
+			}
 		}
 	}
+
+	activityTotalTimesMap := make(map[string]float64)
+	for _, entry := range sloneekEntries {
+		projectId := entry.GetProjectId()
+		activityTotalHours := activityTotalTimesMap[projectId]
+
+		activityTotalTimesMap[projectId] = activityTotalHours + entry.GetHours()
+	}
+
+	logger.Info().Msg("Total Sloneek hours summary:")
+	totalHours := float64(0)
+	for projectId, activityHours := range activityTotalTimesMap {
+		projectName := ""
+		categoryIndex := slices.IndexFunc(sloneekCategories, func(category sloneek.Category) bool { return category.Id == projectId })
+		if categoryIndex != -1 {
+			category := &sloneekCategories[categoryIndex]
+			projectName = category.Name
+		}
+
+		// category not found
+		if projectName == "" {
+			activityIndex := slices.IndexFunc(sloneekActivities, func(activity sloneek.Activity) bool { return activity.Id == projectId })
+			if activityIndex == -1 {
+				logger.Fatal().Str("activityId", projectId).Msg("Activity not found")
+			}
+
+			activity := &sloneekActivities[activityIndex]
+			projectName = activity.Name
+		}
+
+		logger.Info().Msgf("%s: %f hours.", projectName, activityHours)
+		totalHours += activityHours
+	}
+
+	logger.Info().Msgf("Total hours: %f", totalHours)
 
 	// TODO project overview - summary, times etc.
 }

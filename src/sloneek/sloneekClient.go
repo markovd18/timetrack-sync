@@ -150,6 +150,18 @@ type TimeEntry struct {
 	Until      time.Time
 }
 
+func (entry *TimeEntry) GetHours() float64 {
+	return entry.Until.Sub(entry.Since).Hours()
+}
+
+func (entry *TimeEntry) GetProjectId() string {
+	if entry.CategoryId != nil {
+		return *entry.CategoryId
+	}
+
+	return entry.ActivityId
+}
+
 type TimeEntryDTO struct {
 	UserPlanningEventUuid  string    `json:"user_planning_event_uuid"`
 	PlanningCategories     []string  `json:"planning_categories"`

@@ -63,6 +63,8 @@ func MapTogglProjectToSloneekActivityAndCategory(project string) (string, string
 		return "Vývoj", "Akviziční formulář"
 	case "Flexi":
 		return "Vývoj", "Flexi"
+	case "Interní":
+		return "Vývoj", "Iternal job"
 	case "Hiring":
 		return "Hiring", ""
 	case "Admin & Meetings":

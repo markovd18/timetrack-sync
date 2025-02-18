@@ -108,6 +108,7 @@ func main() {
 		activityTotalTimesMap[projectId] = activityTotalHours + entry.GetHours()
 	}
 
+	logger.Info().Msg("----------------------------")
 	logger.Info().Msg("Total Sloneek hours summary:")
 	totalHours := float64(0)
 	for projectId, activityHours := range activityTotalTimesMap {
